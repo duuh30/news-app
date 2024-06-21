@@ -2,6 +2,7 @@
 
 namespace App\Domain\News\Domain\Post\Actions;
 
+use App\Domain\News\Domain\Post\Cache\PostCache;
 use App\Domain\News\Domain\Post\Filters\PostByCategoryFilter;
 use App\Domain\News\Domain\Post\Filters\PostByTitleFilter;
 use App\Domain\News\Domain\Post\Models\Post;
@@ -21,18 +22,20 @@ class PostPaginate
      */
     public function execute(int $perPage = 10): LengthAwarePaginator
     {
-        $queryBuilder = QueryBuilder::for(Post::class)
-            ->defaultSort([
-                AllowedSort::custom('created_at', new PostSortByCreatedAtSort)
-            ])
-            ->allowedFilters([
-                AllowedFilter::custom('title', new PostByTitleFilter),
-                AllowedFilter::custom('category', new PostByCategoryFilter)
-            ])
-            ->with('categories');
+        return PostCache::postPaginate(request('filter'), static function () use($perPage) {
+            $queryBuilder = QueryBuilder::for(Post::class)
+                ->defaultSort([
+                    AllowedSort::custom('created_at', new PostSortByCreatedAtSort)
+                ])
+                ->allowedFilters([
+                    AllowedFilter::custom('title', new PostByTitleFilter),
+                    AllowedFilter::custom('category', new PostByCategoryFilter)
+                ])
+                ->with('categories');
 
-        return $queryBuilder->paginate(
-            perPage: $perPage
-        );
+                return $queryBuilder->paginate(
+                    perPage: $perPage
+                );
+        });
     }
 }
